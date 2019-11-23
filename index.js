@@ -14,30 +14,27 @@ function getTimestamp() {
 function getHash() {
   let pub = process.env.MARVEL_PUBLIC_KEY;
   let priv = process.env.MARVEL_PRIVATE_KEY;
-  let ts =  getTimestamp();
+  let ts = getTimestamp();
   return md5(ts + priv + pub);
 }
 
-function doRequest(path, callback) {
+function doRequest(path, param, callback) {
   var options = {
     host: process.env.MARVEL_ENDPOINT,
     path: path + '?limit=10&ts=' + getTimestamp() + '&apikey=' + process.env.MARVEL_PUBLIC_KEY + '&hash=' + getHash()
   };
 
-  console.log('request: ' + process.env.MARVEL_ENDPOINT + options.path);
+  if (param) {
+    options.path += '&' + param;
+  }
 
   var req = https.get(options, function (res) {
-    console.log('STATUS: ' + res.statusCode);
-    console.log('HEADERS: ' + JSON.stringify(res.headers));
-
-    // Buffer the body entirely for processing as a whole.
     var body = '';
-    res.on('data', function (chunk) {
-      // You can process streamed parts here...
-      body += chunk
-    }).on('end', function () {
-      callback(body);
-    })
+    res.on('data', (chunk) => body += chunk)
+      .on('end', () => {
+        let json = JSON.parse(body);
+        callback(json);
+      });
   });
 
   req.on('error', function (e) {
@@ -45,13 +42,20 @@ function doRequest(path, callback) {
   });
 }
 
-app.get('/', (req, res) => {
-  doRequest('/v1/public/comics', (body) => { res.setHeader('Content-Type', 'application/json'); res.send(body) });
+app.get('/search/:query', (req, res) => {
+  let p;
+  if (req.params.query) {
+    p = 'titleStartsWith=' + req.params.query;
+  }
+  doRequest('/v1/public/comics', p, (body) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.statusCode = body.code;
+    res.send(body)
+  });
 });
 
 const port = process.env.PORT;
 
-// starting the server
 app.listen(port, () => {
   console.log('listening on port ' + port);
 });
