@@ -28,7 +28,7 @@ function doRequest(path, param, callback) {
   // This is pretty use-case specific and isn't very flexible but it gets the job done.
   var options = {
     host: process.env.MARVEL_ENDPOINT,
-    path: `${path}?limit=10&ts=${getTimestamp()}&apikey=${process.env.MARVEL_PUBLIC_KEY}&hash=${getHash()}`
+    path: `${path}'?limit=10&ts=${getTimestamp()}&apikey=${process.env.MARVEL_PUBLIC_KEY}&hash=${getHash()}`
   };
 
   if (param) {
