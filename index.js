@@ -5,6 +5,12 @@ const https = require('https');
 const app = express();
 const md5 = require('js-md5');
 
+const dev = process.env.DEVELOPMENT || false;
+
+// This is a simple middleware to avoid having to publish the API keys
+// It is intended to do as little mutation as possible, so the results
+// flow through it and straight to the frontend
+
 app.use(bodyParser.json());
 
 function getTimestamp() {
@@ -19,9 +25,10 @@ function getHash() {
 }
 
 function doRequest(path, param, callback) {
+  // This is pretty use-case specific and isn't very flexible but it gets the job done.
   var options = {
     host: process.env.MARVEL_ENDPOINT,
-    path: path + '?limit=10&ts=' + getTimestamp() + '&apikey=' + process.env.MARVEL_PUBLIC_KEY + '&hash=' + getHash()
+    path: `${path}?limit=10&ts=${getTimestamp()}&apikey=${process.env.MARVEL_PUBLIC_KEY}&hash=${getHash()}`
   };
 
   if (param) {
@@ -45,10 +52,26 @@ function doRequest(path, param, callback) {
 app.get('/search/:query', (req, res) => {
   let p;
   if (req.params.query) {
-    p = 'titleStartsWith=' + req.params.query;
+    p = `titleStartsWith=${req.params.query}`;
   }
   doRequest('/v1/public/comics', p, (body) => {
     res.setHeader('Content-Type', 'application/json');
+
+    // Don't do this when live, but during development we can be a bit more lenient
+    if (dev) res.setHeader('Access-Control-Allow-Origin', '*');
+
+     // Mirror the response from the Marvel API
+     // This lets us handle everything from the frontend without having to handle
+     // every use case here
+    res.statusCode = body.code;
+    res.send(body)
+  });
+});
+
+app.get('/detail/:id', (req, res) => {
+  doRequest(`/v1/public/comics/${req.params.id}`, null, (body) => {
+    res.setHeader('Content-Type', 'application/json');
+    if (dev) res.setHeader('Access-Control-Allow-Origin', '*');
     res.statusCode = body.code;
     res.send(body)
   });
