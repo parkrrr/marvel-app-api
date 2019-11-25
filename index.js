@@ -57,8 +57,8 @@ app.get('/search/:query', (req, res) => {
   doRequest('/v1/public/comics', p, (body) => {
     res.setHeader('Content-Type', 'application/json');
 
-    // Don't do this when live, but during development we can be a bit more lenient
-    if (dev) res.setHeader('Access-Control-Allow-Origin', '*');
+    // Be lenient in dev, but in production restrict access
+    res.setHeader('Access-Control-Allow-Origin', dev ? '*' : process.env.FRONTEND_URL);
 
      // Mirror the response from the Marvel API
      // This lets us handle everything from the frontend without having to handle
@@ -71,7 +71,7 @@ app.get('/search/:query', (req, res) => {
 app.get('/detail/:id', (req, res) => {
   doRequest(`/v1/public/comics/${req.params.id}`, null, (body) => {
     res.setHeader('Content-Type', 'application/json');
-    if (dev) res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', dev ? '*' : process.env.FRONTEND_URL);
     res.statusCode = body.code;
     res.send(body)
   });
