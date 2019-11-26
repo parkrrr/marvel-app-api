@@ -32,8 +32,6 @@ function doRequest(path, params, callback) {
   p.hash = p.hash || getHash();
   p.limit = p.limit || 10;
 
-  console.log(p);
-
   let queryString = qs.stringify(p);
 
   let options = {
